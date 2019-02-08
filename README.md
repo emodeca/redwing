@@ -1,6 +1,6 @@
 # redwing
 
-A massive fiery Hollow Knight mod! Redwing provides your character with numerous radiant, flaming abilities which give you more damage and make you stronger. It's fully configurable, and even includes a hard mode, if you're up for the challenge. Its designed to work with other total overhaul mods, including Lightbringer and Blackmoth.
+This is a fork of AvengingAngle's redwing. The intent is to fix some bugs introduced with the GodMaster DLC and possibly pick up with the WIP Rebalance that AA started.
 
 ### Features
 
