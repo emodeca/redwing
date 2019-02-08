@@ -1,11 +1,10 @@
 ﻿using System.Collections;
-using System.Collections.Generic;
 using System.IO;
-using System.Reflection;
 using ModCommon;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.Video;
+using Logger = Modding.Logger;
 
 namespace redwing
 {
@@ -38,7 +37,7 @@ namespace redwing
             else if (to.name == "Dream_Final_Boss")
             {
                 log("Loading false light control... Best of luck little knight. You will need it...");
-                GameObject meme = new GameObject("corruptedRadianceController", typeof(false_light),
+                var meme = new GameObject("corruptedRadianceController", typeof(false_light),
                     typeof(AudioSource));
             }
         }
@@ -46,52 +45,45 @@ namespace redwing
         private void generateEndingClip(int ending)
         {
             if (ending == 0)
-            {
                 StartCoroutine(loadEndingDelay("ending1.webm"));
-            }
             else if (ending == 1)
-            {
                 StartCoroutine(loadEndingDelay("ending2.webm"));
-            }
-            else if (ending == 2)
-            {
-                StartCoroutine(loadEndingDelay("ending3.webm"));
-            }
+            else if (ending == 2) StartCoroutine(loadEndingDelay("ending3.webm"));
 
             //Destroy(GameObject.Find("Cinematic Player"));
         }
 
         private static void loadEnding(string endingName)
         {
-            string videoPath = Application.dataPath + "/Managed/Mods/redwing/" + endingName;
+            var videoPath = Application.dataPath + "/Managed/Mods/redwing/" + endingName;
             log("Loading video from path " + videoPath);
 
             if (!File.Exists(videoPath))
             {
                 log("Custom redwing cutscenes are NOT installed. This is not an error.");
                 log("Falling back to vanilla cutscenes because why not?");
-                GameObject o = new GameObject("redwingEnding");
+                var o = new GameObject("redwingEnding");
                 return;
             }
 
-            GameObject oldRenderer = GameObject.Find("Cinematic Player");
-            
-            
-            GameObject newVideoPlayer = new GameObject("redwingEnding", typeof(VideoPlayer), typeof(AudioSource),
+            var oldRenderer = GameObject.Find("Cinematic Player");
+
+
+            var newVideoPlayer = new GameObject("redwingEnding", typeof(VideoPlayer), typeof(AudioSource),
                 typeof(video_blanker));
 
             newVideoPlayer.transform.position = oldRenderer.transform.position;
             newVideoPlayer.transform.rotation = oldRenderer.transform.rotation;
 
-            AudioSource a = newVideoPlayer.GetComponent<AudioSource>();
-            a.volume = (GameManager.instance.gameSettings.masterVolume *
-                        GameManager.instance.gameSettings.soundVolume * 0.01f);
+            var a = newVideoPlayer.GetComponent<AudioSource>();
+            a.volume = GameManager.instance.gameSettings.masterVolume *
+                       GameManager.instance.gameSettings.soundVolume * 0.01f;
             a.playOnAwake = false;
             a.Stop();
             a.bypassEffects = true;
-            
-            VideoPlayer v = newVideoPlayer.GetOrAddComponent<VideoPlayer>();
-            
+
+            var v = newVideoPlayer.GetOrAddComponent<VideoPlayer>();
+
             v.audioOutputMode = VideoAudioOutputMode.AudioSource;
             v.SetTargetAudioSource(0, a);
 
@@ -100,11 +92,11 @@ namespace redwing
             v.isLooping = false;
             v.playOnAwake = false;
             v.waitForFirstFrame = true;
-            
+
             v.audioOutputMode = VideoAudioOutputMode.Direct;
             v.targetCamera = Camera.current;
             v.aspectRatio = VideoAspectRatio.FitInside;
-            
+
             v.Prepare();
             DestroyImmediate(oldRenderer);
         }
@@ -114,24 +106,22 @@ namespace redwing
             //yield return new WaitForSeconds(0.5f);
             yield return null;
             loadEnding(endingName);
-            
-            VideoPlayer rwe = GameObject.Find("redwingEnding").GetComponent<VideoPlayer>();
-            if (rwe == null)
-            {
-                yield break;
-            }
+
+            var rwe = GameObject.Find("redwingEnding").GetComponent<VideoPlayer>();
+            if (rwe == null) yield break;
             while (!rwe.isPrepared)
             {
                 log("Preparing video");
                 yield return new WaitForSeconds(0.5f);
             }
+
             rwe.Play();
             GameObject.Find("redwingEnding").GetComponent<AudioSource>().Play();
         }
 
         private static void log(string str)
         {
-            Modding.Logger.Log("[Redwing] " + str);
+            Logger.Log("[Redwing] " + str);
         }
     }
 }

@@ -1,5 +1,6 @@
 ﻿using angleintegration;
 using Language;
+using Modding;
 
 namespace redwing
 {
@@ -7,27 +8,23 @@ namespace redwing
     {
         public static void createLore(bool overrideBlackmoth, bool forceEnglishLore)
         {
-            log("Preparing to setup lore. Force english lore is " + forceEnglishLore + " and is english is " + isEnglish());
+            log("Preparing to setup lore. Force english lore is " + forceEnglishLore + " and is english is " +
+                isEnglish());
             // ReSharper disable once InvertIf because it will look dumb in the future.
             if (forceEnglishLore || isEnglish())
             {
                 setupLoreEN();
-                if (overrideBlackmoth)
-                {
-                    setupBlackmothLoreEN();
-                }
+                if (overrideBlackmoth) setupBlackmothLoreEN();
             }
-            
-            
         }
-        
+
         public static bool isEnglish()
         {
-            LanguageCode locale = Language.Language.CurrentLanguage();
-            return (locale == LanguageCode.EN || locale == LanguageCode.EN_AU || locale == LanguageCode.EN_CA
-                    || locale == LanguageCode.EN_CB || locale == LanguageCode.EN_GB || locale == LanguageCode.EN_IE
-                    || locale == LanguageCode.EN_JM || locale == LanguageCode.EN_NZ || locale == LanguageCode.EN_TT
-                    || locale == LanguageCode.EN_US || locale == LanguageCode.EN_ZA);
+            var locale = Language.Language.CurrentLanguage();
+            return locale == LanguageCode.EN || locale == LanguageCode.EN_AU || locale == LanguageCode.EN_CA
+                   || locale == LanguageCode.EN_CB || locale == LanguageCode.EN_GB || locale == LanguageCode.EN_IE
+                   || locale == LanguageCode.EN_JM || locale == LanguageCode.EN_NZ || locale == LanguageCode.EN_TT
+                   || locale == LanguageCode.EN_US || locale == LanguageCode.EN_ZA;
         }
 
         private static void setupLoreEN()
@@ -42,12 +39,10 @@ namespace redwing
                 "and not, as it may seem, a reimagining to fit a mod thematically. " +
                 "The lore came first and mod second. " +
                 "Thus, the text you see here is what I truly believe happened in Hallownest, at least the Hallownest of my mind.<page>" +
-                
                 "For there is no one Hallownest but millions, " +
                 "each stored in the brains of people who have played Hollow Knight, and each one different from all the others. " +
                 "The vanilla game is a few people attempting to transcribe just one of these worlds into a game. " +
                 "The information inside is not any more or less real or factual than any other Hallownest, including my own.<page>" +
-                
                 "I have no control over how you interpret this lore, and I don’t want any. " +
                 "Everything inside is factual. " +
                 "Read through it and decide which facts you like and dislike, or outright reject the presuppositions of. " +
@@ -55,7 +50,7 @@ namespace redwing
                 "Or don’t. " +
                 "After all, I have no control over how you interpret this lore."));
 
-            
+
             angleint.addLanguageString(new language_string("General", "PROLOGUE_EXCERPT_01",
                 "In nightmares they think of you with adoration and respect"));
             angleint.addLanguageString(new language_string("General", "PROLOGUE_EXCERPT_02",
@@ -589,8 +584,9 @@ namespace redwing
                 "A once great Hallownest Crossguard, controlled by a strange force. Instinct still drives it to guard its post against intruders."));
             angleint.addLanguageString(new language_string("Journal", "NOTE_ZOM_BARGER",
                 "A thick orange mist fills these corrupted bugs. It has a sugary taste I find foul. After you kill these creatures, I suggest you do not eat them."));
-            angleint.addLanguageString(new language_string("Journal", "NOTE_ZOM_RUNNER", "These \"civilised\" bugs of Hallownest were weak when uninfected and equally weak today. " +
-                                                                                         "Send them back into the dirt they were born in!"));
+            angleint.addLanguageString(new language_string("Journal", "NOTE_ZOM_RUNNER",
+                "These \"civilised\" bugs of Hallownest were weak when uninfected and equally weak today. " +
+                "Send them back into the dirt they were born in!"));
             angleint.addLanguageString(new language_string("Journal", "DESC_NIGHTMARE_GRIMM",
                 "Beautiful spectre of scarlet flame."));
             angleint.addLanguageString(new language_string("CP2", "GRIMM_DEFEAT_2",
@@ -744,20 +740,20 @@ namespace redwing
             angleint.addLanguageString(new language_string("Credits List", "CREDITS_TESTERS_NAME_COL_02",
                 "Ben Newhouse<br>Pirate-Rob<br>Unborn_Pho3nix<br>Kyle Pulver<br>" +
                 "Greg Smith<br>Luke Souris<br>Matthew White<br>Verulean<br>Ayako Hibino"));
-            
+
             log("Completed adding lore and stuff.");
         }
-        
-        
+
+
         // only used once blackmoth actually gets lore
         private static void setupBlackmothLoreEN()
         {
             log("Replacing blackmoth lore with redwing lore.");
         }
-        
+
         private static void log(string str)
         {
-            Modding.Logger.Log("[Redwing] " + str);
+            Logger.Log("[Redwing] " + str);
         }
     }
 }

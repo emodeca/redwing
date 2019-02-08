@@ -38,12 +38,12 @@ namespace angleintegration
         protected void setupModVars(modern_mod_vars v)
         {
             modVars = v;
-            FieldInfo field = typeof(modern_mod).GetField
+            var field = typeof(modern_mod).GetField
                 ("Name", BindingFlags.Instance | BindingFlags.Public);
             field?.SetValue(this, modVars.modName);
 
             Log("modname is " + Name);
-            
+
             angleint.modernMods.Add(modVars);
         }
 
@@ -82,12 +82,12 @@ namespace angleintegration
         {
             get
             {
-                TGlobalSettings gSettings = modGlobalSettings;
-                if ((object) gSettings != null)
+                var gSettings = modGlobalSettings;
+                if (gSettings != null)
                     return gSettings;
                 return modGlobalSettings = Activator.CreateInstance<TGlobalSettings>();
             }
-            set { modGlobalSettings = value; }
+            set => modGlobalSettings = value;
         }
 
         protected void saveGlobalSettings()
@@ -97,11 +97,11 @@ namespace angleintegration
                 File.Delete(globalSettingsFilename + ".bak");
             if (File.Exists(globalSettingsFilename))
                 File.Move(globalSettingsFilename, globalSettingsFilename + ".bak");
-            using (FileStream fileStream = File.Create(globalSettingsFilename))
+            using (var fileStream = File.Create(globalSettingsFilename))
             {
-                using (StreamWriter streamWriter = new StreamWriter((Stream) fileStream))
+                using (var streamWriter = new StreamWriter(fileStream))
                 {
-                    string json = JsonUtility.ToJson((object) globalSettings, true);
+                    var json = JsonUtility.ToJson(globalSettings, true);
                     streamWriter.Write(json);
                 }
             }
@@ -112,10 +112,12 @@ namespace angleintegration
             Log("Loading redwing settings!");
             if (!File.Exists(globalSettingsFilename))
                 return;
-            using (FileStream fileStream = File.OpenRead(globalSettingsFilename))
+            using (var fileStream = File.OpenRead(globalSettingsFilename))
             {
-                using (StreamReader streamReader = new StreamReader((Stream) fileStream))
+                using (var streamReader = new StreamReader(fileStream))
+                {
                     modGlobalSettings = JsonUtility.FromJson<TGlobalSettings>(streamReader.ReadToEnd());
+                }
             }
         }
     }
@@ -125,21 +127,28 @@ namespace angleintegration
     {
         private TSaveSettings modSettings;
 
+
+        protected modern_mod()
+        {
+            ModHooks.Instance.BeforeSavegameSaveHook += saveSettings;
+            ModHooks.Instance.AfterSavegameLoadHook += loadSettings;
+        }
+
         public TSaveSettings settings
         {
             get
             {
-                TSaveSettings set = modSettings;
-                if ((object) set != null)
+                var set = modSettings;
+                if (set != null)
                     return set;
                 return modSettings = Activator.CreateInstance<TSaveSettings>();
             }
-            set { modSettings = value; }
+            set => modSettings = value;
         }
 
         private void loadSettings(SaveGameData data)
         {
-            string name = GetType().Name;
+            var name = GetType().Name;
             Log("Loading savegame data!");
             if (data?.modData == null || !data.modData.ContainsKey(name))
                 return;
@@ -153,21 +162,14 @@ namespace angleintegration
 
         private void saveSettings(SaveGameData data)
         {
-            string name = GetType().Name;
+            var name = GetType().Name;
             Log("Adding Settings to Save file");
             if (data.modData == null)
                 data.modData = new ModSettingsDictionary();
             if (data.modData.ContainsKey(name))
-                data.modData[name] = (IModSettings) settings;
+                data.modData[name] = settings;
             else
-                data.modData.Add(name, (IModSettings) settings);
-        }
-
-
-        protected modern_mod()
-        {
-            ModHooks.Instance.BeforeSavegameSaveHook += saveSettings;
-            ModHooks.Instance.AfterSavegameLoadHook += loadSettings;
+                data.modData.Add(name, settings);
         }
     }
 
@@ -176,14 +178,13 @@ namespace angleintegration
         where TGlobalSettings : IModSettings, new()
         where TSecondarySettings : IModSettings, new()
     {
-        
         private readonly string secondarySettingsFilename;
         private TSecondarySettings modSecondarySettings;
 
         protected modern_mod()
         {
             secondarySettingsFilename = Application.persistentDataPath + ModHooks.PathSeperator + "Redwing" +
-                                     ".flamegen.json";
+                                        ".flamegen.json";
             loadSecondarySettings();
         }
 
@@ -191,12 +192,12 @@ namespace angleintegration
         {
             get
             {
-                TSecondarySettings sSettings = modSecondarySettings;
-                if ((object) sSettings != null)
+                var sSettings = modSecondarySettings;
+                if (sSettings != null)
                     return sSettings;
                 return modSecondarySettings = Activator.CreateInstance<TSecondarySettings>();
             }
-            set { modSecondarySettings = value; }
+            set => modSecondarySettings = value;
         }
 
         protected void saveSecondarySettings()
@@ -206,11 +207,11 @@ namespace angleintegration
                 File.Delete(secondarySettingsFilename + ".bak");
             if (File.Exists(secondarySettingsFilename))
                 File.Move(secondarySettingsFilename, secondarySettingsFilename + ".bak");
-            using (FileStream fileStream = File.Create(secondarySettingsFilename))
+            using (var fileStream = File.Create(secondarySettingsFilename))
             {
-                using (StreamWriter streamWriter = new StreamWriter((Stream) fileStream))
+                using (var streamWriter = new StreamWriter(fileStream))
                 {
-                    string json = JsonUtility.ToJson((object) secondarySettings, true);
+                    var json = JsonUtility.ToJson(secondarySettings, true);
                     streamWriter.Write(json);
                 }
             }
@@ -221,16 +222,13 @@ namespace angleintegration
             Log("Loading flamegen Settings");
             if (!File.Exists(secondarySettingsFilename))
                 return;
-            using (FileStream fileStream = File.OpenRead(secondarySettingsFilename))
+            using (var fileStream = File.OpenRead(secondarySettingsFilename))
             {
-                using (StreamReader streamReader = new StreamReader((Stream) fileStream))
+                using (var streamReader = new StreamReader(fileStream))
+                {
                     modSecondarySettings = JsonUtility.FromJson<TSecondarySettings>(streamReader.ReadToEnd());
+                }
             }
         }
-
     }
-    
-    
-    
 }
-    

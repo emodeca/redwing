@@ -28,7 +28,7 @@
 
         public player_bool(string key, bool state, bool allowOverride = false, int priority = 0)
         {
-            this.boolKey = key;
+            boolKey = key;
             this.state = state;
             this.allowOverride = allowOverride;
             this.priority = priority;
@@ -44,19 +44,15 @@
 
         public player_int(string key, int value, bool allowOverride = false, int priority = 0)
         {
-            this.intKey = key;
+            intKey = key;
             this.value = value;
             this.allowOverride = allowOverride;
             this.priority = priority;
         }
     }
-    
-    
-    
+
+
     public class message_parsing
     {
-        
-        
-        
     }
 }

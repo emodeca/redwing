@@ -1,6 +1,4 @@
-﻿using Modding;
-
-namespace redwing
+﻿namespace redwing
 {
     public static class gng_bindings
     {
@@ -13,37 +11,25 @@ namespace redwing
 
         public static bool hasNailBinding()
         {
-            if (applyBindings && applyNailBinding)
-            {
-                return BossSequenceController.BoundNail;
-            }
+            if (applyBindings && applyNailBinding) return BossSequenceController.BoundNail;
             return false;
         }
-        
+
         public static bool hasSpellBinding()
         {
-            if (applyBindings && applySpellBinding)
-            {
-                return BossSequenceController.BoundSoul;
-            }
+            if (applyBindings && applySpellBinding) return BossSequenceController.BoundSoul;
             return false;
         }
-        
+
         public static bool hasCharmBinding()
         {
-            if (applyBindings && applyCharmBinding)
-            {
-                return BossSequenceController.BoundCharms;
-            }
+            if (applyBindings && applyCharmBinding) return BossSequenceController.BoundCharms;
             return false;
         }
-        
+
         public static bool hasHealthBinding()
         {
-            if (applyBindings && applyHealthBinding)
-            {
-                return BossSequenceController.BoundShell;
-            }
+            if (applyBindings && applyHealthBinding) return BossSequenceController.BoundShell;
             return false;
         }
     }

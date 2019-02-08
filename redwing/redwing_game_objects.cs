@@ -1,138 +1,130 @@
 ﻿using System;
-using System.Collections;
 using System.Collections.Generic;
-using HutongGames.PlayMaker.Actions;
 using ModCommon;
 using UnityEngine;
-using Object = UnityEngine.Object;
-
 
 namespace redwing
 {
     internal class redwing_game_objects
     {
+        private const float ROTATION_AMOUNT = (float) (360.0 / 16.0);
         public static Texture2D[] fireBalls;
         public static Texture2D[] fireballMagmas;
         public static Texture2D[] fireballMagmaFireballs;
         public static Texture2D[] pillarTextures;
-        
+
         public static Texture2D[] fireLasers;
-        
+
         public static GameObject voidKnight;
-        
-        private const float ROTATION_AMOUNT = (float) (360.0 / 16.0);
-        
+
+        // Seriously. Fuck you Unity. I literally just want spinning fireballs.
+        private readonly GameObject[] fireballPivotGOs = new GameObject[7];
+        private readonly GameObject[] fireballsGo = new GameObject[7];
+        public readonly GameObject[] lasers = new GameObject[16];
+
 
         //private const float TRANSFORM_XOFFSET = 0.69f;
 
         private GameObject fireballSpawn;
         private GameObject laserSpawn;
-        private readonly GameObject[] fireballsGo = new GameObject[7];
-        
-        // Seriously. Fuck you Unity. I literally just want spinning fireballs.
-        private readonly GameObject[] fireballPivotGOs = new GameObject[7];
-        
-        
+
+
         private GameObject shield;
-        public readonly GameObject[] lasers = new GameObject[16];
 
         public static void addSinglePillar(float lifespan)
         {
-            GameObject firePillar = new GameObject("redwingFlamePillar", typeof(redwing_pillar_behavior),
+            var firePillar = new GameObject("redwingFlamePillar", typeof(redwing_pillar_behavior),
                 typeof(SpriteRenderer), typeof(Rigidbody2D), typeof(BoxCollider2D));
             firePillar.transform.localScale = new Vector3(1f, 1f, 1f);
-            
+
             firePillar.transform.parent = voidKnight.transform;
             firePillar.transform.localPosition = Vector3.zero;
-            
-            int randomTextureToUse = redwing_flame_gen.rng.Next(0, pillarTextures.Length);
-            SpriteRenderer img = firePillar.GetComponent<SpriteRenderer>();
-            Rect pillarSpriteRect = new Rect(0, 0,
+
+            var randomTextureToUse = redwing_flame_gen.rng.Next(0, pillarTextures.Length);
+            var img = firePillar.GetComponent<SpriteRenderer>();
+            var pillarSpriteRect = new Rect(0, 0,
                 redwing_flame_gen.FPTEXTURE_WIDTH, redwing_flame_gen.FPTEXTURE_HEIGHT);
             img.sprite = Sprite.Create(pillarTextures[randomTextureToUse], pillarSpriteRect,
                 new Vector2(0.5f, 0.5f), 30f);
             img.color = Color.white;
 
-            Rigidbody2D fakePhysics = firePillar.GetComponent<Rigidbody2D>();
+            var fakePhysics = firePillar.GetComponent<Rigidbody2D>();
             fakePhysics.isKinematic = true;
-            BoxCollider2D hitEnemies = firePillar.GetComponent<BoxCollider2D>();
+            var hitEnemies = firePillar.GetComponent<BoxCollider2D>();
             hitEnemies.isTrigger = true;
             hitEnemies.size = img.size;
             hitEnemies.offset = new Vector2(0, 0);
 
             firePillar.GetComponent<redwing_pillar_behavior>().lifespan = lifespan;
-            
+
             firePillar.SetActive(true);
         }
-        
+
 
         public void addLasers()
         {
-            if (voidKnight == null)
-            {
-                return;
-            }
-            
+            if (voidKnight == null) return;
+
             laserSpawn = new GameObject("redwingLaserSpawner", typeof(redwing_laser_spawner_behavior),
                 typeof(AudioSource));
-            Vector3 laserSpawnPos = voidKnight.GetComponent<BoxCollider2D>().bounds.center;
+            var laserSpawnPos = voidKnight.GetComponent<BoxCollider2D>().bounds.center;
             laserSpawn.transform.position = laserSpawnPos;
             // Why? Because layers 20, 9, 26, and 31 are explicitly ignored by the game
             // and layers above 31 don't exist
             laserSpawn.layer = 31;
-            
-            float rotationMod = (float)(redwing_flame_gen.rng.NextDouble() * ROTATION_AMOUNT);
-            
-            for (int i = 0; i < 16; i++)
+
+            var rotationMod = (float) (redwing_flame_gen.rng.NextDouble() * ROTATION_AMOUNT);
+
+            for (var i = 0; i < 16; i++)
             {
                 lasers[i] = new GameObject("redwingLaser" + i, typeof(SpriteRenderer), typeof(Rigidbody2D),
                     typeof(BoxCollider2D), typeof(redwing_laser_behavior));
                 lasers[i].transform.parent = laserSpawn.transform;
                 lasers[i].transform.localPosition = Vector3.zero;
-                
+
                 lasers[i].layer = 0;
                 lasers[i].transform.localScale = new Vector3(1f, 8f, 1f);
-                Rigidbody2D laserPhysics = lasers[i].GetComponent<Rigidbody2D>();
+                var laserPhysics = lasers[i].GetComponent<Rigidbody2D>();
                 laserPhysics.isKinematic = true;
-                
-                Rect r = new Rect(0, 0, redwing_flame_gen.LASERTEXTURE_WIDTH, redwing_flame_gen.LASERTEXTURE_HEIGHT);
-                SpriteRenderer s = lasers[i].GetComponent<SpriteRenderer>();
+
+                var r = new Rect(0, 0, redwing_flame_gen.LASERTEXTURE_WIDTH, redwing_flame_gen.LASERTEXTURE_HEIGHT);
+                var s = lasers[i].GetComponent<SpriteRenderer>();
                 s.sprite = Sprite.Create(fireLasers[i], r, new Vector2(0.5f, 0f), 50);
                 s.enabled = true;
                 s.color = new Color(1f, 1f, 1f, 0f);
-                
-                redwing_laser_behavior shootEm = lasers[i].GetComponent<redwing_laser_behavior>();
+
+                var shootEm = lasers[i].GetComponent<redwing_laser_behavior>();
                 shootEm.drawEm = s;
                 shootEm.spriteUsed = fireLasers[i];
                 shootEm.enteredColliders = new List<Collider2D>();
-                
-                BoxCollider2D laserPassthrough = lasers[i].GetComponent<BoxCollider2D>();
+
+                var laserPassthrough = lasers[i].GetComponent<BoxCollider2D>();
                 laserPassthrough.isTrigger = true;
                 laserPassthrough.size = s.size;
                 laserPassthrough.offset = new Vector2(0, 0);
-                
-                
+
+
                 lasers[i].transform.Rotate(0f, 0f, ROTATION_AMOUNT * i + rotationMod);
             }
         }
 
         public static void addSingleLaser(float angel)
         {
-            GameObject laserSpawnObj = new GameObject("redwingLaserSpawner", typeof(redwing_laser_spawner_behavior),
+            var laserSpawnObj = new GameObject("redwingLaserSpawner", typeof(redwing_laser_spawner_behavior),
                 typeof(AudioSource));
-            Vector3 laserSpawnPos = voidKnight.GetComponent<BoxCollider2D>().bounds.center;
+            var laserSpawnPos = voidKnight.GetComponent<BoxCollider2D>().bounds.center;
             laserSpawnPos.y += 0.2f;
             laserSpawnObj.transform.position = laserSpawnPos;
             laserSpawnObj.layer = 31;
-            
-            GameObject laser = new GameObject("redwingLaserSolo", typeof(SpriteRenderer), typeof(Rigidbody2D),
+
+            var laser = new GameObject("redwingLaserSolo", typeof(SpriteRenderer), typeof(Rigidbody2D),
                 typeof(BoxCollider2D), typeof(redwing_laser_behavior));
             laser.transform.parent = laserSpawnObj.transform;
             laser.transform.localPosition = Vector3.zero;
-            int randomTexture = redwing_flame_gen.rng.Next(0, fireLasers.Length);
-            redwing_laser_behavior shootEm = laser.GetComponent<redwing_laser_behavior>();
-            Rect r = new Rect(0, 0, redwing_flame_gen.LASERTEXTURE_WIDTH, redwing_flame_gen.LASERTEXTURE_HEIGHT);
-            SpriteRenderer s = laser.GetComponent<SpriteRenderer>();
+            var randomTexture = redwing_flame_gen.rng.Next(0, fireLasers.Length);
+            var shootEm = laser.GetComponent<redwing_laser_behavior>();
+            var r = new Rect(0, 0, redwing_flame_gen.LASERTEXTURE_WIDTH, redwing_flame_gen.LASERTEXTURE_HEIGHT);
+            var s = laser.GetComponent<SpriteRenderer>();
             s.sprite = Sprite.Create(fireLasers[randomTexture], r, new Vector2(0.5f, 0.5f), 50);
             s.enabled = true;
             s.color = new Color(1f, 1f, 1f, 0f);
@@ -142,77 +134,71 @@ namespace redwing
             shootEm.soloLaser = true;
             shootEm.enteredColliders = new List<Collider2D>();
 
-                
+
             laser.layer = 0;
             laser.transform.localScale = new Vector3(1f, 8f, 1f);
-            Rigidbody2D laserPhysics = laser.GetComponent<Rigidbody2D>();
+            var laserPhysics = laser.GetComponent<Rigidbody2D>();
             laserPhysics.isKinematic = true;
-            
-            
-            BoxCollider2D laserPassthrough = laser.GetComponent<BoxCollider2D>();
+
+
+            var laserPassthrough = laser.GetComponent<BoxCollider2D>();
             laserPassthrough.isTrigger = true;
             laserPassthrough.size = s.size;
             laserPassthrough.offset = new Vector2(0, 0);
-                
+
             laser.transform.Rotate(0f, 0f, angel);
-            
+
             laser.SetActive(true);
-            
+
             //Modding.Logger.Log("[Redwing] temp made solo laser ");
         }
-        
+
         public void addFireballs()
         {
-            if (voidKnight == null)
-            {
-                return;
-            }
+            if (voidKnight == null) return;
             fireballSpawn = new GameObject("redwingFireballSpawner", typeof(redwing_fireball_spawner_behavior));
-            Vector3 fbSpawnPos = voidKnight.GetComponent<BoxCollider2D>().bounds.center;
+            var fbSpawnPos = voidKnight.GetComponent<BoxCollider2D>().bounds.center;
             fbSpawnPos.y += 0.4f;
             fireballSpawn.transform.position = fbSpawnPos;
-            
+
             fireballSpawn.layer = 31;
 
             fireballSpawn.SetActive(true);
-            for (int i = 0; i < 7; i++)
+            for (var i = 0; i < 7; i++)
             {
-                
                 fireballPivotGOs[i] = new GameObject("redwingFBPivot" + i, typeof(BoxCollider2D),
                     typeof(Rigidbody2D), typeof(redwing_fireball_behavior));
                 fireballPivotGOs[i].transform.parent = fireballSpawn.transform;
                 fireballPivotGOs[i].transform.localPosition = Vector3.zero;
-                
-                
+
+
                 fireballPivotGOs[i].layer = 0;
-                
+
                 fireballsGo[i] = new GameObject("redwingFB" + i, typeof(SpriteRenderer), typeof(AudioSource));
                 fireballsGo[i].transform.parent = fireballPivotGOs[i].transform;
                 fireballsGo[i].transform.localPosition = Vector3.zero;
-                
+
                 // Layers 20, 9, 26, and 31 are explicitly ignored by the game
                 // and layers above 31 don't exist
                 fireballsGo[i].layer = 31;
-                
+
                 setupFireballSprite(fireballsGo[i].GetComponent<SpriteRenderer>());
                 setupFireballPhysics(fireballPivotGOs[i].GetComponent<Rigidbody2D>());
                 setupCustomFireballObject(i);
-                
+
                 fireballPivotGOs[i].SetActive(true);
                 fireballsGo[i].SetActive(true);
             }
-            
         }
 
-        public static void addSingleFireball(float xVelocity, float yVelocity, float xTransform, float yTransform, string nameExtend)
+        public static void addSingleFireball(float xVelocity, float yVelocity, float xTransform, float yTransform,
+            string nameExtend)
         {
-            if (voidKnight == null)
-            {
-                return;
-            }
+            if (voidKnight == null) return;
 
-            GameObject fireballSpawnPoint = new GameObject("redwingFireballSpawner" + nameExtend, typeof(redwing_fireball_spawner_behavior));
-            Vector3 fbSpawnPos = voidKnight.GetComponent<BoxCollider2D>().bounds.center;
+            var fireballSpawnPoint = new GameObject("redwingFireballSpawner" + nameExtend,
+                typeof(redwing_fireball_spawner_behavior));
+            var fbSpawnPos = voidKnight.GetComponent<BoxCollider2D>().bounds.center;
             fbSpawnPos.y += 0.4f;
             fireballSpawnPoint.transform.position = fbSpawnPos;
 
@@ -220,14 +206,15 @@ namespace redwing
 
             fireballSpawnPoint.SetActive(true);
 
-            GameObject fireballPivot = new GameObject("redwingFireball" + nameExtend, typeof(BoxCollider2D),
+            var fireballPivot = new GameObject("redwingFireball" + nameExtend, typeof(BoxCollider2D),
                 typeof(Rigidbody2D), typeof(redwing_fireball_behavior));
             fireballPivot.transform.parent = fireballSpawnPoint.transform;
             fireballPivot.transform.localPosition = Vector3.zero;
 
             fireballPivot.layer = 0;
 
-            GameObject fireballSprite = new GameObject("redwingFireballSprite" + nameExtend, typeof(SpriteRenderer), typeof(AudioSource));
+            var fireballSprite = new GameObject("redwingFireballSprite" + nameExtend, typeof(SpriteRenderer),
+                typeof(AudioSource));
             fireballSprite.transform.parent = fireballPivot.transform;
             fireballSprite.transform.localPosition = Vector3.zero;
 
@@ -238,14 +225,14 @@ namespace redwing
 
             setupFireballSprite(fireballSprite.GetComponent<SpriteRenderer>());
             setupFireballPhysics(fireballPivot.GetComponent<Rigidbody2D>());
-            
-            
+
+
             setupCustomFireballObject(fireballPivot.GetComponent<redwing_fireball_behavior>(),
                 fireballPivot.GetComponent<BoxCollider2D>(), fireballSprite, xVelocity, yVelocity);
 
-            redwing_fireball_behavior b = fireballPivot.GetComponent<redwing_fireball_behavior>();
-            
-            Vector3 selfPos = b.selfTranform.position;
+            var b = fireballPivot.GetComponent<redwing_fireball_behavior>();
+
+            var selfPos = b.selfTranform.position;
             selfPos.x += xTransform;
             selfPos.y += yTransform;
             b.selfTranform.position = selfPos;
@@ -255,36 +242,35 @@ namespace redwing
             //double maxXPoint = 3.0 / (yVelocity);
             //b.maxHeight = (float) ( (-1.5 * Math.Pow(maxXPoint, 2.0)) + yVelocity * maxXPoint);
             b.realisticPhysics = true;
-            
+
 
             fireballPivot.SetActive(true);
             fireballSprite.SetActive(true);
-            
         }
 
         private static void setupCustomFireballObject(redwing_fireball_behavior behavior, BoxCollider2D collide,
             GameObject fireballSprite, float xVelocity, float yVelocity)
         {
             behavior.fireball = fireballSprite;
-            
+
             collide.isTrigger = true;
-            
+
             behavior.selfTranform = behavior.gameObject.transform;
-            
+
 
             behavior.fireballSprite = fireballSprite.GetComponent<SpriteRenderer>();
             behavior.fireballPhysics = behavior.gameObject.GetComponent<Rigidbody2D>();
             collide.size = behavior.fireballSprite.size;
-            Vector2 spriteSize = behavior.fireballSprite.size;
+            var spriteSize = behavior.fireballSprite.size;
             //collide.offset = new Vector2(spriteSize.x / 2, 0);
             collide.offset = new Vector2(0, 0);
-            behavior.rotationalVelocity = (float) ((redwing_flame_gen.rng.NextDouble() - 0.5 ) * 10.0 * 180.0 / Math.PI);
+            behavior.rotationalVelocity = (float) ((redwing_flame_gen.rng.NextDouble() - 0.5) * 10.0 * 180.0 / Math.PI);
 
             behavior.xVelocity = xVelocity;
             behavior.yVelocity = yVelocity;
-                        
+
             behavior.hitboxForPivot = collide;
-                
+
             behavior.fireballMagmas = fireballMagmas;
             behavior.doPhysics = true;
             behavior.fireballMagmaFireballs = fireballMagmaFireballs;
@@ -296,11 +282,11 @@ namespace redwing
 
         private void setupCustomFireballObject(int i)
         {
-            redwing_fireball_behavior behavior = fireballPivotGOs[i].GetComponent<redwing_fireball_behavior>();
-            BoxCollider2D collide = fireballPivotGOs[i].GetComponent<BoxCollider2D>();
-            
+            var behavior = fireballPivotGOs[i].GetComponent<redwing_fireball_behavior>();
+            var collide = fireballPivotGOs[i].GetComponent<BoxCollider2D>();
+
             float xVelocity;
-            float xTransform = 0f;
+            var xTransform = 0f;
             switch (i)
             {
                 case 0:
@@ -334,25 +320,24 @@ namespace redwing
                     xVelocity = 0f;
                     break;
             }
+
             const float yVelocity = 30f;
-            
+
             setupCustomFireballObject(behavior, collide, fireballsGo[i], xVelocity, yVelocity);
-            
-            Vector3 selfPos = behavior.selfTranform.position;
+
+            var selfPos = behavior.selfTranform.position;
             selfPos.x += xTransform;
             behavior.selfTranform.position = selfPos;
             behavior.selfPosition = selfPos;
-            
         }
 
         private static void setupFireballSprite(SpriteRenderer sprite)
         {
-            Rect r = new Rect(0, 0, redwing_flame_gen.FBTEXTURE_WIDTH, redwing_flame_gen.FBTEXTURE_HEIGHT);
-            int randomFireball = redwing_flame_gen.rng.Next(0, fireBalls.Length);
+            var r = new Rect(0, 0, redwing_flame_gen.FBTEXTURE_WIDTH, redwing_flame_gen.FBTEXTURE_HEIGHT);
+            var randomFireball = redwing_flame_gen.rng.Next(0, fireBalls.Length);
             sprite.sprite = Sprite.Create(fireBalls[randomFireball], r, new Vector2(0.5f, 0.5f));
             sprite.enabled = true;
             sprite.color = Color.white;
-            
         }
 
         private static void setupFireballPhysics(Rigidbody2D physics)
@@ -360,43 +345,30 @@ namespace redwing
             physics.isKinematic = true;
             physics.gravityScale = 0f;
         }
-        
-        
+
+
         public static void applyHitInstance(GameObject target, int expectedDamage, GameObject source, float flameGain)
         {
-            int realDamage = expectedDamage;
-            
-            double multiplier = 1;
-            if (PlayerData.instance.GetBool("equippedCharm_25"))
-            {
-                multiplier *= 1.5;
-            }
-            if (PlayerData.instance.GetBool("equippedCharm_6") && PlayerData.instance.GetInt("health") == 1)
-            {
-                multiplier *= 1.75f;
-            }
+            var realDamage = expectedDamage;
 
-            if (gng_bindings.hasNailBinding())
-            {
-                multiplier *= 0.3;
-            }
+            double multiplier = 1;
+            if (PlayerData.instance.GetBool("equippedCharm_25")) multiplier *= 1.5;
+            if (PlayerData.instance.GetBool("equippedCharm_6") && PlayerData.instance.GetInt("health") == 1)
+                multiplier *= 1.75f;
+
+            if (gng_bindings.hasNailBinding()) multiplier *= 0.3;
 
             realDamage = (int) Math.Round(realDamage * multiplier);
-            
-            if (realDamage <= 0)
-            {
-                return;
-            }
 
-            HealthManager targetHP = getHealthManagerRecursive(target);
+            if (realDamage <= 0) return;
+
+            var targetHP = getHealthManagerRecursive(target);
 
             if (targetHP == null) return;
 
             if (GameManager.instance.GetComponent<rebalanced_hooks>() != null)
-            {
                 GameManager.instance.GetComponent<rebalanced_hooks>().flamePower += flameGain;
-            }
-            
+
             //Modding.Logger.Log("[Redwing] Doing " + realDamage + " damage with attack name " + source.name);
 
             targetHP.hp -= realDamage;
@@ -406,18 +378,18 @@ namespace redwing
                 targetHP.Die(0f, AttackTypes.Nail, true);
                 return;
             }
-            
+
             FSMUtility.SendEventToGameObject(targetHP.gameObject, "BLOCKED HIT", false);
-            
+
             FSMUtility.SendEventToGameObject(source, "HIT LANDED", false);
-            if ((Object) targetHP.gameObject.GetComponent<DontClinkGates>() != (Object) null) return;
-            
-            FSMUtility.SendEventToGameObject(targetHP.gameObject, "HIT", false);    
+            if (targetHP.gameObject.GetComponent<DontClinkGates>() != null) return;
+
+            FSMUtility.SendEventToGameObject(targetHP.gameObject, "HIT", false);
             GameManager.instance.FreezeMoment(1);
             GameCameras.instance.cameraShakeFSM.SendEvent("EnemyKillShake");
 
-            napalm memes = targetHP.gameObject.GetOrAddComponent<napalm>();
-            memes.addNapalm(realDamage * (0.10), Color.green);
+            var memes = targetHP.gameObject.GetOrAddComponent<napalm>();
+            memes.addNapalm(realDamage * 0.10, Color.green);
             /*
             targetHP.Hit(new HitInstance
             {
@@ -438,27 +410,24 @@ namespace redwing
 
         public static void addNapalm(GameObject target, double fireToAdd, Color fireColor)
         {
-            HealthManager hm = getHealthManagerRecursive(target);
-            napalm n = hm.gameObject.GetOrAddComponent<napalm>();
+            var hm = getHealthManagerRecursive(target);
+            var n = hm.gameObject.GetOrAddComponent<napalm>();
             n.addNapalm(fireToAdd, fireColor);
         }
 
         private static HealthManager getHealthManagerRecursive(GameObject target)
         {
-            HealthManager targetHP = target.GetComponent<HealthManager>();
-            int i = 6;
+            var targetHP = target.GetComponent<HealthManager>();
+            var i = 6;
             while (targetHP == null && i > 0)
             {
                 targetHP = target.GetComponent<HealthManager>();
-                if (target.transform.parent == null)
-                {
-                    return targetHP;
-                }
+                if (target.transform.parent == null) return targetHP;
                 target = target.transform.parent.gameObject;
                 i--;
             }
+
             return targetHP;
         }
-        
     }
 }

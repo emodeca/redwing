@@ -1,29 +1,31 @@
 ﻿using System;
+using System.IO;
 using System.Linq;
+using angleintegration;
+using BlackmothMod;
+using ModCommon;
 using Modding;
 using UnityEngine;
-using System.IO;
-using System.Reflection;
-using angleintegration;
-using ModCommon;
+using Logger = Modding.Logger;
 
 namespace redwing
 {
     // ReSharper disable once InconsistentNaming because it's the name I want to appear on Modding API.
     // ReSharper disable once UnusedMember.Global because it's used implicitly but importing rider extensions is dumb.
-    public class redwing : modern_mod<redwing_settings, redwing_global_settings, redwing_flamegen_settings>, ITogglableMod
+    public class redwing : modern_mod<redwing_settings, redwing_global_settings, redwing_flamegen_settings>,
+        ITogglableMod
     {
         private const string VERSION = "1.2 Godmaster";
         private const int LOAD_ORDER = 90;
         private const int minApi = 44;
+        private bool apiTooLow;
+        private bool blackmothError;
 
 
         private bool blackmothExists;
-        private bool blackmothError;
-        private bool apiTooLow;
         private bool noModCommon;
-        private bool shitmothst;
         private int problemCode;
+        private bool shitmothst;
 
         // ReSharper disable once ArrangeTypeMemberModifiers
         public redwing()
@@ -31,62 +33,28 @@ namespace redwing
             setupModVars(new modern_mod_vars("Redwing CP1", VERSION, 11, LOAD_ORDER));
         }
 
-        // Version detection code originally by Seanpr, used with permission.
-        public override string getVersionAppend()
-        {
-            string ver = "";
-            if (blackmothExists)
-            {
-                ver += "(Blackmoth)";
-            }
-            else if (shitmothst)
-            {
-                ver += "(Shitmoth)";
-            }
-            else if (globalSettings.useGreymothDashWhenBlackmothMissing)
-            {
-                ver += "(Greymoth)";
-            }
-            else
-            {
-                ver += "(Othermoth?)";
-            }
-
-            if (blackmothError)
-                ver += " (Error: Blackmoth too old - either remove it or update it to 1.7.2 or newer)";
-
-            if (apiTooLow)
-                ver += " (Error: ModAPI too old... Minimum version is 44... seriously)";
-            
-
-            if (noModCommon)
-                ver += " (Error: Redwing requires ModCommon)";
-
-            return ver;
-        }
-
         public override void Initialize()
         {
             setupSettings();
             load_textures.loadAllTextures();
             lore.createLore(globalSettings.overrideBlackmothLore, globalSettings.useEnglishLoreWhenLanguageMissing);
-            
+
             problemCode = 0;
 
             if (globalSettings.redwingFirstLaunch)
                 problemCode += 1;
-            
+
             // report if the user has modcommon.
             noModCommon = !hasAssembly("ModCommon");
-            
-            
+
+
             // report if the user has blackmoth.
             blackmothExists = hasAssembly("BlackmothMod");
             log("does blackmoth exist? " + blackmothExists);
-            
+
             // report if the user is using shitmothst... lol
             shitmothst = hasAssembly("shitmothst");
-            
+
             redwing_fireball_behavior.fbDamageBase = globalSettings.fireballDamageBase;
             redwing_fireball_behavior.fbDamageScale = globalSettings.fireballDamagePerNailLvl;
             redwing_fireball_behavior.fbmDamageBase = globalSettings.fireballMagmaDamageBase;
@@ -118,10 +86,6 @@ namespace redwing
                         problemCode += 2;
                     }
                 }
-                else
-                {
-                    //redwing_lore.overrideBlackmothLore = false;
-                }
             }
             catch (Exception e)
             {
@@ -144,19 +108,19 @@ namespace redwing
             gng_bindings.applyNailBinding = globalSettings.applyNailBindingToRedwingAttacks;
             gng_bindings.applySpellBinding = globalSettings.applySoulBindingToNapalm;
             gng_bindings.applyHealthBinding = globalSettings.applyHealthBindingToShield;
-            
+
 
             redwing_error.englishLore = globalSettings.useEnglishLoreWhenLanguageMissing;
             redwing_error.englishWarnings = globalSettings.useEnglishWarningInfoWhenLanguageMissing;
 
-            napalm.damageExponent = (float) globalSettings.napalmDamageExponent;
-            napalm.damageMultiplier = (float) globalSettings.napalmDamageMultiplier;
-            
-            apiTooLow = (Convert.ToInt32(ModHooks.Instance.ModVersion.Split('-')[1]) < minApi);
+            napalm.damageExponent = globalSettings.napalmDamageExponent;
+            napalm.damageMultiplier = globalSettings.napalmDamageMultiplier;
+
+            apiTooLow = Convert.ToInt32(ModHooks.Instance.ModVersion.Split('-')[1]) < minApi;
             if (noModCommon || blackmothError || apiTooLow)
                 problemCode = 4;
-            
-            
+
+
             redwing_error.redwingProblemCode = problemCode;
 
             redwing_flame_gen.flameIntensityCurve = new[]
@@ -172,12 +136,12 @@ namespace redwing
             };
             redwing_flame_gen.flameIntensityThresholds = new[]
             {
-                (double) secondarySettings.flameColor1Threshold,
-                (double) secondarySettings.flameColor2Threshold,
-                (double) secondarySettings.flameColor3Threshold,
+                secondarySettings.flameColor1Threshold,
+                secondarySettings.flameColor2Threshold,
+                secondarySettings.flameColor3Threshold,
                 (double) secondarySettings.flameColor4Threshold
             };
-            
+
             ModHooks.Instance.AfterSavegameLoadHook += saveGame;
             ModHooks.Instance.NewGameHook += addComponent;
             ModHooks.Instance.ApplicationQuitHook += saveGlobalSettings;
@@ -185,10 +149,44 @@ namespace redwing
             printErrors();
         }
 
+
+        public void Unload()
+        {
+            log("Disabling! If you see any more non-settings messages by this mod please report as an issue.");
+            ModHooks.Instance.AfterSavegameLoadHook -= saveGame;
+            ModHooks.Instance.NewGameHook -= addComponent;
+        }
+
+        // Version detection code originally by Seanpr, used with permission.
+        public override string getVersionAppend()
+        {
+            var ver = "";
+            if (blackmothExists)
+                ver += "(Blackmoth)";
+            else if (shitmothst)
+                ver += "(Shitmoth)";
+            else if (globalSettings.useGreymothDashWhenBlackmothMissing)
+                ver += "(Greymoth)";
+            else
+                ver += "(Othermoth?)";
+
+            if (blackmothError)
+                ver += " (Error: Blackmoth too old - either remove it or update it to 1.7.2 or newer)";
+
+            if (apiTooLow)
+                ver += " (Error: ModAPI too old... Minimum version is 44... seriously)";
+
+
+            if (noModCommon)
+                ver += " (Error: Redwing requires ModCommon)";
+
+            return ver;
+        }
+
         private void checkBlackmothVersion()
         {
-            Version blackmothVers = new Version(BlackmothMod.Blackmoth.Instance.GetVersion());
-            Version blackmothNeeded = new Version("1.7.2");
+            var blackmothVers = new Version(Blackmoth.Instance.GetVersion());
+            var blackmothNeeded = new Version("1.7.2");
             if (blackmothNeeded.CompareTo(blackmothVers) > 0)
             {
                 log("ERROR: Blackmoth found but too old to work with redwing!" +
@@ -199,48 +197,42 @@ namespace redwing
             {
                 redwing_hooks.blackmothSymbolsExist = true;
             }
-
         }
 
         private void setupSettings()
         {
-            string settingsFilePath = Application.persistentDataPath + ModHooks.PathSeperator + "Redwing.settings.json";
+            var settingsFilePath = Application.persistentDataPath + ModHooks.PathSeperator + "Redwing.settings.json";
 
-            bool forceReloadGlobalSettings = (globalSettings != null && globalSettings.settingsVersion != version_info.SETTINGS_VER);
+            var forceReloadGlobalSettings =
+                globalSettings != null && globalSettings.settingsVersion != version_info.SETTINGS_VER;
 
             if (forceReloadGlobalSettings || !File.Exists(settingsFilePath))
             {
                 if (forceReloadGlobalSettings)
-                {
                     log("Settings outdated! Rebuilding.");
-                }
                 else
-                {
                     log("Settings not found, rebuilding... File will be saved to: " + settingsFilePath);
-                }
 
                 globalSettings?.reset();
             }
+
             saveGlobalSettings();
-            
-            
+
+
             settingsFilePath = Application.persistentDataPath + ModHooks.PathSeperator + "Redwing.flamegen.json";
-            forceReloadGlobalSettings = (secondarySettings != null && secondarySettings.settingsVersion != version_info.SETTINGS_VER);
+            forceReloadGlobalSettings = secondarySettings != null &&
+                                        secondarySettings.settingsVersion != version_info.SETTINGS_VER;
 
             if (forceReloadGlobalSettings || !File.Exists(settingsFilePath))
             {
                 if (forceReloadGlobalSettings)
-                {
                     log("Settings outdated! Rebuilding.");
-                }
                 else
-                {
                     log("Settings not found, rebuilding... File will be saved to: " + settingsFilePath);
-                }
 
                 secondarySettings?.reset();
             }
-            
+
             saveSecondarySettings();
         }
 
@@ -252,25 +244,18 @@ namespace redwing
         private void printErrors()
         {
             if (noModCommon)
-            {
                 GameManager.instance.gameObject.AddComponent<redwing_error>();
-            }
             else
-            {
                 modcommonAddRedwingError();
-            }
 
-            if (problemCode == 1)
-            {
-                globalSettings.redwingFirstLaunch = false;
-            }
+            if (problemCode == 1) globalSettings.redwingFirstLaunch = false;
         }
 
         private void addComponent()
         {
             log("Adding Redwing to game.");
 
-            if ( ( !blackmothExists && !shitmothst) && globalSettings.useGreymothDashWhenBlackmothMissing)
+            if (!blackmothExists && !shitmothst && globalSettings.useGreymothDashWhenBlackmothMissing)
             {
                 GameManager.instance.gameObject.AddComponent<greymoth>();
                 // no blackmoth so no need to override it.
@@ -295,10 +280,10 @@ namespace redwing
             GameManager.instance.gameObject.AddComponent<room_checker>();
             GameManager.instance.gameObject.AddComponent<rebalanced_hooks>();
 
-            
+
             if (!noModCommon)
                 modcommonAddRedwingError();
-            
+
             log(Language.Language.CurrentLanguage() + " is your current language.");
         }
 
@@ -307,39 +292,26 @@ namespace redwing
         {
             GameManager.instance.gameObject.GetOrAddComponent<redwing_error>();
         }
-        
+
         private static bool hasAssembly(string assemblyNamespaceName)
         {
-            Assembly[] assemblies = AppDomain.CurrentDomain.GetAssemblies();
-            foreach (Assembly assembly in assemblies)
-            {
+            var assemblies = AppDomain.CurrentDomain.GetAssemblies();
+            foreach (var assembly in assemblies)
                 try
                 {
-                    if (assembly.GetTypes().Any(type => type.Namespace == assemblyNamespaceName))
-                    {
-                        return true;
-                    }
+                    if (assembly.GetTypes().Any(type => type.Namespace == assemblyNamespaceName)) return true;
                 }
                 catch
                 {
                     log("You have a broken assembly named '" + assembly.FullName + "' You should probably remove it.");
                 }
-            }
 
             return false;
         }
 
-
-        public void Unload()
-        {
-            log("Disabling! If you see any more non-settings messages by this mod please report as an issue.");
-            ModHooks.Instance.AfterSavegameLoadHook -= saveGame;
-            ModHooks.Instance.NewGameHook -= addComponent;
-        }
-
         private static void log(string str)
         {
-            Modding.Logger.Log("[Redwing] " + str);
+            Logger.Log("[Redwing] " + str);
         }
     }
 }

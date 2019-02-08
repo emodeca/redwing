@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Reflection;
 using Modding;
+
 // ReSharper disable UnusedMember.Global
 
 namespace angleintegration
@@ -47,39 +47,38 @@ namespace angleintegration
             this.allowOverride = allowOverride;
         }
     }
-    
-    
+
+
     // ReSharper disable once InconsistentNaming
     public class angleint : modern_mod
     {
-        private static Dictionary<string, Dictionary<string, short_lang_string>> languageStrings = 
+        private static Dictionary<string, Dictionary<string, short_lang_string>> languageStrings =
             new Dictionary<string, Dictionary<string, short_lang_string>>();
-        
+
         private static Dictionary<string, short_player_bool> playerBools = new Dictionary<string, short_player_bool>();
-        
+
         private static Dictionary<string, short_player_int> playerInts = new Dictionary<string, short_player_int>();
-        
-        
-        public static List<modern_mod_vars> modernMods { get; internal set; } = new List<modern_mod_vars>();
 
         public angleint()
         {
             setupModVars(new modern_mod_vars("Angle Integration", "0.0.1", 1, int.MinValue));
         }
 
+
+        public static List<modern_mod_vars> modernMods { get; } = new List<modern_mod_vars>();
+
         public override void Initialize()
         {
             Log("Adding modern language get hook.");
             ModHooks.Instance.LanguageGetHook += modernLanguageGet;
             ModHooks.Instance.GetPlayerBoolHook += modernPlayerBoolGet;
-            
         }
 
         public override string getVersionAppend()
         {
             const int minApi = 40;
-            string ver = "";
-            bool apiTooLow = Convert.ToInt32(ModHooks.Instance.ModVersion.Split('-')[1]) < minApi;
+            var ver = "";
+            var apiTooLow = Convert.ToInt32(ModHooks.Instance.ModVersion.Split('-')[1]) < minApi;
             if (apiTooLow) ver += " (Error: ModAPI too old)";
             Log("For debugging purposes, version is " + ver);
             return ver;
@@ -97,7 +96,7 @@ namespace angleintegration
             playerBools = new Dictionary<string, short_player_bool>();
             playerInts = new Dictionary<string, short_player_int>();
         }
-        
+
 
         public static void addPlayerInt(player_int i)
         {
@@ -107,17 +106,13 @@ namespace angleintegration
             }
             else
             {
-                short_player_int oldI = playerInts[i.intKey];
+                var oldI = playerInts[i.intKey];
                 if (oldI.allowOverride || oldI.priority < i.priority)
-                {
                     playerInts[i.intKey] = new short_player_int(i.value, i.priority, i.allowOverride);
-                }
                 else
-                {
-                    Logger.Log("[Angle Integration] Unable to add player int "  +
+                    Logger.Log("[Angle Integration] Unable to add player int " +
                                "because priority lower than existing mod at " +
                                i.intKey + " You may force remove this bool using removePlayerInt!");
-                }
             }
         }
 
@@ -125,11 +120,12 @@ namespace angleintegration
         {
             playerInts.Remove(key);
         }
-        
+
         private int modernPlayerIntGet(string originalset)
         {
-            return playerInts.ContainsKey(originalset) ?
-                playerInts[originalset].value : PlayerData.instance.GetIntInternal(originalset);
+            return playerInts.ContainsKey(originalset)
+                ? playerInts[originalset].value
+                : PlayerData.instance.GetIntInternal(originalset);
         }
 
         public static void addPlayerBool(player_bool b)
@@ -140,17 +136,13 @@ namespace angleintegration
             }
             else
             {
-                short_player_bool oldB = playerBools[b.boolKey];
+                var oldB = playerBools[b.boolKey];
                 if (oldB.allowOverride || oldB.priority < b.priority)
-                {
                     playerBools[b.boolKey] = new short_player_bool(b.state, b.priority, b.allowOverride);
-                }
                 else
-                {
-                    Logger.Log("[Angle Integration] Unable to add player bool "  +
+                    Logger.Log("[Angle Integration] Unable to add player bool " +
                                "because priority lower than existing mod at " +
                                b.boolKey + " You may force remove this bool using removePlayerBool!");
-                }
             }
         }
 
@@ -158,20 +150,19 @@ namespace angleintegration
         {
             playerBools.Remove(key);
         }
-        
+
         private bool modernPlayerBoolGet(string originalset)
         {
-            return playerBools.ContainsKey(originalset) ?
-                playerBools[originalset].value : PlayerData.instance.GetBoolInternal(originalset);
+            return playerBools.ContainsKey(originalset)
+                ? playerBools[originalset].value
+                : PlayerData.instance.GetBoolInternal(originalset);
         }
 
         public static void addLanguageString(language_string l)
         {
             //Logger.Log("Adding language string [" + l.sheetTitle + "] [" + l.key + "]");
             if (!languageStrings.ContainsKey(l.sheetTitle))
-            {
                 languageStrings.Add(l.sheetTitle, new Dictionary<string, short_lang_string>());
-            }
 
             if (!languageStrings[l.sheetTitle].ContainsKey(l.key))
             {
@@ -179,17 +170,13 @@ namespace angleintegration
             }
             else
             {
-                short_lang_string oldLangString = languageStrings[l.sheetTitle][l.key];
+                var oldLangString = languageStrings[l.sheetTitle][l.key];
                 if (oldLangString.allowOverride || oldLangString.priority < l.priority)
-                {
                     languageStrings[l.sheetTitle][l.key] = new short_lang_string(l.value, l.priority, l.allowOverride);
-                }
                 else
-                {
-                    Logger.Log("[Angle Integration] Unable to add language string "  +
-                                       "because priority lower than existing mod string at " +
-                                       l.sheetTitle + " " + l.key);
-                }
+                    Logger.Log("[Angle Integration] Unable to add language string " +
+                               "because priority lower than existing mod string at " +
+                               l.sheetTitle + " " + l.key);
             }
         }
 
@@ -198,13 +185,14 @@ namespace angleintegration
             if (!languageStrings.ContainsKey(sheetTitle)) return;
             languageStrings[sheetTitle].Remove(key);
         }
-        
+
         private static string modernLanguageGet(string key, string sheettitle)
         {
             if (!languageStrings.ContainsKey(sheettitle)) return Language.Language.GetInternal(key, sheettitle);
-            
-            return languageStrings[sheettitle].ContainsKey(key) ?
-                languageStrings[sheettitle][key].value : Language.Language.GetInternal(key, sheettitle);
+
+            return languageStrings[sheettitle].ContainsKey(key)
+                ? languageStrings[sheettitle][key].value
+                : Language.Language.GetInternal(key, sheettitle);
         }
     }
 }

@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections;
-using ModCommon;
 using UnityEngine;
+using Logger = Modding.Logger;
 
 namespace redwing
 {
@@ -11,42 +11,38 @@ namespace redwing
 
         private void Update()
         {
-            if (destroySelfWhenNull == null)
-            {
-                Destroy(gameObject);
-            }
+            if (destroySelfWhenNull == null) Destroy(gameObject);
         }
     }
-    
-    
+
+
     public class napalm : MonoBehaviour
     {
-        private ParticleSystem fieryParticles;
-        private ParticleSystemRenderer fieryParticleRenderer;
-        private GameObject fireGenerator;
+        public static double damageExponent;
+        public static double damageMultiplier;
 
         public HealthManager cachedEnemyHM;
         public tk2dSprite cachedEnemySprite;
-
-        private double napalmStrength = 0.0;
+        private readonly ParticleSystemRenderer fieryParticleRenderer;
+        private readonly ParticleSystem fieryParticles;
+        private readonly GameObject fireGenerator;
         private Color flameColor = Color.gray;
+
+        private double napalmStrength;
         private bool visible;
 
-        public static double damageExponent;
-        public static double damageMultiplier;
-        
 
         public napalm()
         {
             //Modding.Logger.Log("Trying to add napalm... wish me luck.");
-            
-            fireGenerator = new GameObject(gameObject.name + " napalm", typeof(ParticleSystem), 
+
+            fireGenerator = new GameObject(gameObject.name + " napalm", typeof(ParticleSystem),
                 typeof(ParticleSystemRenderer), typeof(napalm_self_destroy));
             fireGenerator.GetComponent<napalm_self_destroy>().destroySelfWhenNull = gameObject;
             fireGenerator.transform.localPosition = gameObject.transform.position;
             fieryParticles = fireGenerator.GetComponent<ParticleSystem>();
 
-            ParticleSystem.MainModule partMain = fieryParticles.main;
+            var partMain = fieryParticles.main;
             partMain.loop = true;
             fieryParticles.useAutoRandomSeed = true;
             partMain.gravityModifier = 0f;
@@ -59,24 +55,24 @@ namespace redwing
             partMain.maxParticles = 300;
             partMain.startSpeed = new ParticleSystem.MinMaxCurve(16f, 20f);
             partMain.startRotation = new ParticleSystem.MinMaxCurve(0, (float) (Math.PI * 2.0));
-            
-            ParticleSystem.EmissionModule partEmission = fieryParticles.emission;
+
+            var partEmission = fieryParticles.emission;
             partEmission.enabled = true;
             partEmission.rateOverTime = new ParticleSystem.MinMaxCurve(16f);
 
             fieryParticleRenderer = fireGenerator.GetComponent<ParticleSystemRenderer>();
-            
-            
+
+
             fieryParticleRenderer.material.shader = Shader.Find("Sprites/Default");
             fieryParticleRenderer.material.mainTexture = load_textures.spark;
             fieryParticleRenderer.material.color = flameColor;
             fieryParticleRenderer.renderMode = ParticleSystemRenderMode.Billboard;
             partMain.startColor = new ParticleSystem.MinMaxGradient(Color.white);
-            
+
             cachedEnemyHM = gameObject.GetComponent<HealthManager>();
             cachedEnemySprite = gameObject.GetComponent<tk2dSprite>();
             visible = true;
-            
+
             if (cachedEnemyHM != null && cachedEnemyHM.hp > 0)
             {
                 if (gameObject.name.StartsWith("Nightmare Grimm Boss") || gameObject.name.StartsWith("Grimm Boss"))
@@ -84,7 +80,7 @@ namespace redwing
                     DestroyImmediate(fireGenerator);
                     return;
                 }
-                
+
                 StartCoroutine(dealFireDamage());
             }
             else
@@ -92,42 +88,45 @@ namespace redwing
                 DestroyImmediate(fireGenerator);
                 return;
             }
+
             fireGenerator.SetActive(true);
         }
 
         private void Update()
         {
             if (fireGenerator == null) return;
-            
+
             if (cachedEnemyHM.isDead)
             {
                 Destroy(fireGenerator);
                 return;
             }
-            
-            Vector3 newPos = gameObject.transform.position;
+
+            var newPos = gameObject.transform.position;
             newPos.z = -1f;
             fireGenerator.transform.localPosition = newPos;
-            
-            ParticleSystem.Particle[] particleList = new ParticleSystem.Particle[fieryParticles.particleCount];
+
+            var particleList = new ParticleSystem.Particle[fieryParticles.particleCount];
             fieryParticles.GetParticles(particleList);
-            for(int i = 0; i < particleList.Length; ++i)
+            for (var i = 0; i < particleList.Length; ++i)
             {
-                float lifePercentage = (particleList[i].remainingLifetime / particleList[i].startLifetime);
+                var lifePercentage = particleList[i].remainingLifetime / particleList[i].startLifetime;
                 particleList[i].startColor = Color.Lerp(Color.clear, Color.white, lifePercentage);
             }
+
             fieryParticles.SetParticles(particleList, fieryParticles.particleCount);
-            
+
             if (cachedEnemySprite == null) return;
-            
+
             if (visible && (!cachedEnemySprite.isActiveAndEnabled || cachedEnemySprite.color.a < 0.05f))
             {
-                Modding.Logger.Log("Found invisible enemy, making invis!");
+                Logger.Log("Found invisible enemy, making invis!");
                 fieryParticleRenderer.material.color = Color.clear;
                 visible = false;
-            } else if (!visible && (cachedEnemySprite.isActiveAndEnabled || cachedEnemySprite.color.a >= 0.05f))
+            }
+            else if (!visible && (cachedEnemySprite.isActiveAndEnabled || cachedEnemySprite.color.a >= 0.05f))
             {
-                Modding.Logger.Log("Enemy now visible!");
+                Logger.Log("Enemy now visible!");
                 fieryParticleRenderer.material.color = flameColor;
                 visible = true;
             }
@@ -136,25 +135,21 @@ namespace redwing
         public void addNapalm(double napalm, Color napalmColor)
         {
             if (fireGenerator == null) return;
-            
+
             if (napalmStrength > 0.0)
             {
-                double netNapalm = napalm + napalmStrength;
+                var netNapalm = napalm + napalmStrength;
 
-                float avgRed = (float) ((napalmColor.r * napalm + flameColor.r * napalmStrength) / netNapalm);
-                float avgGrn = (float) ((napalmColor.g * napalm + flameColor.g * napalmStrength) / netNapalm);
-                float avgBlu = (float) ((napalmColor.b * napalm + flameColor.b * napalmStrength) / netNapalm);
-                
+                var avgRed = (float) ((napalmColor.r * napalm + flameColor.r * napalmStrength) / netNapalm);
+                var avgGrn = (float) ((napalmColor.g * napalm + flameColor.g * napalmStrength) / netNapalm);
+                var avgBlu = (float) ((napalmColor.b * napalm + flameColor.b * napalmStrength) / netNapalm);
+
                 flameColor = new Color(avgRed, avgGrn, avgBlu);
 
                 if (napalmStrength < 10.0)
-                {
                     flameColor.a = (float) (napalmStrength / 10.0);
-                }
                 else
-                {
                     flameColor.a = 1.0f;
-                }
                 napalmStrength += napalm;
             }
             else
@@ -163,10 +158,7 @@ namespace redwing
                 napalmStrength = napalm;
             }
 
-            if (visible)
-            {
-                fieryParticleRenderer.material.color = flameColor;
-            }
+            if (visible) fieryParticleRenderer.material.color = flameColor;
         }
 
         private IEnumerator dealFireDamage()
@@ -176,7 +168,7 @@ namespace redwing
                 if (napalmStrength >= 1.0)
                 {
                     //Modding.Logger.Log("Doing " + calculateNapalmDamage() + " napalm dmg to " + gameObject.name);
-                    napalmStrength = (napalmStrength * 0.95) - 1.0;
+                    napalmStrength = napalmStrength * 0.95 - 1.0;
                     setNapalmParts();
 
                     if (!gng_bindings.hasSpellBinding())
@@ -193,41 +185,42 @@ namespace redwing
                 {
                     fieryParticleRenderer.material.color = Color.clear;
                 }
-                yield return new WaitForSeconds((float) (Math.Pow(Math.E, -0.05*napalmStrength)) + 0.05f);
+
+                yield return new WaitForSeconds((float) Math.Pow(Math.E, -0.05 * napalmStrength) + 0.05f);
             }
+
             DestroyImmediate(fireGenerator);
         }
 
         private void setNapalmParts()
         {
             if (fireGenerator == null) return;
-            ParticleSystem.MainModule partMain = fieryParticles.main;
-            partMain.startSize = napalmStrength < 30.0 ?
-                new ParticleSystem.MinMaxCurve((float) ((napalmStrength) / 40.0),
-                    (float) ((napalmStrength) / 40.0) + 0.25f) : 
-                new ParticleSystem.MinMaxCurve(0.75f, 1f);
+            var partMain = fieryParticles.main;
+            partMain.startSize = napalmStrength < 30.0
+                ? new ParticleSystem.MinMaxCurve((float) (napalmStrength / 40.0),
+                    (float) (napalmStrength / 40.0) + 0.25f)
+                : new ParticleSystem.MinMaxCurve(0.75f, 1f);
 
-            ParticleSystem.EmissionModule partEmission = fieryParticles.emission;
-            partEmission.rateOverTime = new ParticleSystem.MinMaxCurve((float) ((napalmStrength) / 2.0));
+            var partEmission = fieryParticles.emission;
+            partEmission.rateOverTime = new ParticleSystem.MinMaxCurve((float) (napalmStrength / 2.0));
         }
 
 
         private int calculateNapalmDamage()
         {
-            return (int) (Math.Pow( (napalmStrength * damageMultiplier), damageExponent));
+            return (int) Math.Pow(napalmStrength * damageMultiplier, damageExponent);
         }
 
 
         public void addParticles(int particlesToAdd, Color fireColor)
         {
-            for (int i = 0; i < particlesToAdd; i++)
-            {
-                fieryParticles.Emit(new ParticleSystem.EmitParams()
+            for (var i = 0; i < particlesToAdd; i++)
+                fieryParticles.Emit(new ParticleSystem.EmitParams
                 {
                     angularVelocity = 0f,
                     angularVelocity3D = Vector3.zero,
                     applyShapeToPosition = false,
-                    axisOfRotation = Vector3.fwd,
+                    axisOfRotation = Vector3.forward,
                     position = Vector3.zero,
                     randomSeed = (uint) redwing_flame_gen.rng.Next(0, int.MaxValue),
                     rotation = 0f,
@@ -236,12 +229,9 @@ namespace redwing
                     startLifetime = 2f,
                     startSize = 1.0f,
                     startSize3D = Vector3.one,
-                    velocity = new Vector3((float)(redwing_flame_gen.rng.NextDouble()- 0.5) * 12f,
-                        (float)(redwing_flame_gen.rng.NextDouble()- 0.5) * 12f)
+                    velocity = new Vector3((float) (redwing_flame_gen.rng.NextDouble() - 0.5) * 12f,
+                        (float) (redwing_flame_gen.rng.NextDouble() - 0.5) * 12f)
                 }, 1);
-            }
-            
-            
         }
     }
 }
