@@ -1,6 +1,6 @@
 # redwing
 
-This is a fork of AvengingAngle's redwing. The intent is to fix some bugs introduced with the GodMaster DLC and possibly pick up with the WIP Rebalance that AA started.
+This is a fork of [AvengingAngle's redwing](https://github.com/natis1/redwing). The intent is to fix some bugs introduced with the GodMaster DLC and possibly pick up with the WIP Rebalance that AA started.
 
 ### Features
 
