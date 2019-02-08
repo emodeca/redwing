@@ -145,6 +145,7 @@
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
+    <PostBuildEvent Condition="$(ConfigurationName) == 'Release'">cp -f $(TargetFileName) ../../OutputFinal/</PostBuildEvent>
     <PostBuildEvent Condition="'$(OS)' != 'Windows_NT'">cp -f $(TargetFileName) ~/'SteamLibrary/steamapps/common/Hollow Knight/hollow_knight_Data/Managed/Mods/'</PostBuildEvent>
   </PropertyGroup>
 </Project>
